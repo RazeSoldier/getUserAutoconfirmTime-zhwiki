@@ -13,6 +13,7 @@
  * @return string|false 当指定的用户还不是自动确认用户时返回false，其它情况返回用户成为自动确认用户的时间（格式：ISO 8601）
  */
 function getUserAutoconfirmTime($username) {
+    $rawUserName = rawurlencode( $username );
     $arrContextOptions = [
         'ssl' => [
             'verify_peer' => false,
@@ -21,7 +22,7 @@ function getUserAutoconfirmTime($username) {
     ];
 
     # 检查用户是否是自动确认用户
-    $usersApi = "https://zh.wikipedia.org/w/api.php?action=query&list=users&ususers={$username}&usprop=registration|groups&format=json";
+    $usersApi = "https://zh.wikipedia.org/w/api.php?action=query&list=users&ususers={$rawUserName}&usprop=registration|groups&format=json";
     $userData = file_get_contents( $usersApi, false, stream_context_create( $arrContextOptions ) );  
     $userDataArray = json_decode( $userData, true );
     if ( !isset( $userDataArray['query']['users'][0]['groups'] ) ) {
@@ -33,7 +34,7 @@ function getUserAutoconfirmTime($username) {
 
     $registerTime = strtotime( $userDataArray['query']['users'][0]['registration'] );
     $limitTime = $registerTime + 604800;
-    $usercontribsApi = "https://zh.wikipedia.org/w/api.php?action=query&list=usercontribs&ucuser={$username}&ucstart={$registerTime}&ucend={$limitTime}&format=json";
+    $usercontribsApi = "https://zh.wikipedia.org/w/api.php?action=query&list=usercontribs&ucuser={$rawUserName}&ucstart={$registerTime}&ucend={$limitTime}&format=json";
     $usercontribsData = file_get_contents( $usercontribsApi, false, stream_context_create( $arrContextOptions ) );
     $usercontribsArray = json_decode( $usercontribsData, true );
 
@@ -42,7 +43,7 @@ function getUserAutoconfirmTime($username) {
         return date( 'c', $limitTime );
     }
     // 返回第50次编辑的时间
-    $editApi = "https://zh.wikipedia.org/w/api.php?action=query&list=usercontribs&ucuser={$username}&ucdir=newer&uclimit=50&format=json";
+    $editApi = "https://zh.wikipedia.org/w/api.php?action=query&list=usercontribs&ucuser={$rawUserName}&ucdir=newer&uclimit=50&format=json";
     $editData = file_get_contents( $editApi, false, stream_context_create( $arrContextOptions ) );
     return json_decode( $editData, true )['query']['usercontribs'][49]['timestamp'];
 }
